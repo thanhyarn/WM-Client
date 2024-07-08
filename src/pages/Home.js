@@ -119,7 +119,7 @@ const Home = () => {
 
   useEffect(() => {
     // Gọi API để lấy dữ liệu khi component được mount
-    fetch("http://172.20.10.3:3003/api/fetch-data")
+    fetch("https://172.20.10.3:3003/api/fetch-data")
       .then((response) => response.json())
       .then((data) => {
         // Thêm trường key vào mỗi object trong mảng
