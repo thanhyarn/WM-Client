@@ -1,0 +1,13 @@
+.row-raw-material {
+  background-color: #fff4e6; /* Màu nền cho Nguyên vật liệu */
+}
+
+.row-finished-product {
+  background-color: #e0ffef; /* Màu nền cho Thành phẩm */
+}
+
+.hover-bg {
+  &:hover {
+    background-color: #f0f0f0; /* Màu nền khi hover */
+  }
+}

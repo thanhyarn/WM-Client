@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Select, Input, Row, Col } from "antd";
+import {
+  Table,
+  Button,
+  Select,
+  Input,
+  Row,
+  Col,
+  Modal,
+  Card,
+  Checkbox,
+} from "antd";
+import "./Home.css";
 // import data from "./tmpData";
+
 import { SearchOutlined } from "@ant-design/icons";
 import SockJS from "sockjs-client";
 const { Option } = Select;
@@ -19,13 +31,44 @@ const Home = () => {
   const [data, setData] = useState([]);
   const [expandedRowKeys, setExpandedRowKeys] = useState([]); // Khóa hàng mở rộng
   const [selectedWarehouse, setSelectedWarehouse] = useState("0");
-  const [searchValue, setSearchValue] = useState("");
+  const [searchTerm, setSearchValue] = useState("");
+  const [totalProduct, setTotalProduct] = useState(0);
+  const [currentProduct, setCurrentProduct] = useState(0);
+  const [rawMaterial, setRawMaterial] = useState(0);
+  const [finishedProduct, setFinishedProduct] = useState(0);
 
   const aggregateData = (items) => {
+    // Lọc items dựa trên selectedWarehouse
+
+    setTotalProduct(items.length);
     const filteredItems = items.filter(
       (item) => item.warehouse === selectedWarehouse
     );
-    const grouped = filteredItems.reduce((acc, item) => {
+
+    setCurrentProduct(filteredItems.length);
+
+    // Chuẩn hóa searchTerm và lọc thêm dựa trên tên sản phẩm
+    const normalizedSearchTerm = removeAccents(searchTerm.toLowerCase());
+    const furtherFilteredItems = filteredItems.filter((item) =>
+      removeAccents(item.information.split(" - ")[0].toLowerCase()).includes(
+        normalizedSearchTerm
+      )
+    );
+
+    setRawMaterial(
+      furtherFilteredItems.filter(
+        (item) => item.classification_name === "Nguyên vật liệu"
+      ).length
+    );
+
+    setFinishedProduct(
+      furtherFilteredItems.filter(
+        (item) => item.classification_name === "Thành phẩm"
+      ).length
+    );
+
+    // Gom nhóm dữ liệu theo tên và phân loại
+    const grouped = furtherFilteredItems.reduce((acc, item) => {
       const name = item.information.split(" - ")[0]; // Tên sản phẩm
       const category = item.classification_name; // Phân loại
       const key = `${name}-${category}`;
@@ -35,22 +78,43 @@ const Home = () => {
           name,
           category,
           count: 0,
-          data: [], // Khởi tạo mảng để lưu thông tin chi tiết
+          data: [],
         };
       }
       acc[key].count += 1;
       acc[key].data.push({
         epc: item.epc,
-        timestamp: item.timestamp, // Thêm thông tin epc và timestamp vào mảng
+        timestamp: item.timestamp ? item.timestamp : "Chưa từng vào kho",
       });
       return acc;
     }, {});
 
-    // Thêm key cho mỗi object sau khi đã gom nhóm xong
+    // Thêm key cho mỗi object
     return Object.values(grouped).map((item, index) => ({
       ...item,
-      key: index + 1, // Tạo key bắt đầu từ 1 và tăng dần
+      key: index + 1,
     }));
+  };
+
+  const handleViewHistory = (epc) => {
+    // setIsModalOpen(true);
+    // setLoading(true);
+    // fetch(`http://localhost:3003/api/get-record/${epc}`)
+    //   .then((response) => {
+    //     if (!response.ok) {
+    //       throw new Error("Network response was not ok");
+    //     }
+    //     return response.json();
+    //   })
+    //   .then((data) => {
+    //     setHistoryData(data);
+    //     setLoading(false);
+    //     console.log(data);
+    //   })
+    //   .catch((error) => {
+    //     console.error("Error fetching data:", error);
+    //     setLoading(false);
+    //   });
   };
 
   useEffect(() => {
@@ -97,7 +161,7 @@ const Home = () => {
     return () => {
       sock.close();
     };
-  }, [selectedWarehouse]);
+  }, [selectedWarehouse, searchTerm]);
 
   const columns = [
     { title: "Tên mặt hàng", dataIndex: "name", key: "name" },
@@ -122,6 +186,15 @@ const Home = () => {
             dataIndex: "timestamp",
             key: "timestamp",
           },
+          {
+            title: "Hành động",
+            key: "action",
+            render: (text, record) => (
+              <Button onClick={() => handleViewHistory(record.epc)}>
+                Xem lịch sử vận chuyển
+              </Button>
+            ),
+          },
         ]}
         dataSource={record.data}
         pagination={false}
@@ -134,22 +207,57 @@ const Home = () => {
     },
   };
 
-  // const filteredData = data.filter((item) => {
-  //   const matchesWarehouse = selectedWarehouse
-  //     ? item.warehouse === selectedWarehouse
-  //     : true;
-  //   const searchValueNoAccents = removeAccents(searchValue.toLowerCase());
-  //   const matchesSearch = searchValue
-  //     ? removeAccents(item.name.toLowerCase()).includes(searchValueNoAccents) ||
-  //       (item.barcode &&
-  //         removeAccents(item.barcode.toLowerCase()).includes(
-  //           searchValueNoAccents
-  //         ))
-  //     : true;
-  //   return matchesWarehouse && matchesSearch;
-  // });
+  const rowClassName = (record) => {
+    if (record.category === "Nguyên vật liệu") {
+      return "row-raw-material hover-bg";
+    } else if (record.category === "Thành phẩm") {
+      return "row-finished-product hover-bg";
+    }
+    return "hover-bg";
+  };
+
   return (
     <div>
+      <div className="mb-5">
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={12} lg={6}>
+            <Card
+              className="border-l-4"
+              bodyStyle={{ padding: "20px", backgroundColor: "#f0f4ff" }}
+            >
+              <h2 className={`text-3xl`}>{totalProduct}</h2>
+              <p className="text-lg">Tổng sản phẩm</p>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={12} lg={6}>
+            <Card
+              className="border-l-4"
+              bodyStyle={{ padding: "20px", backgroundColor: "#e0ffef" }}
+            >
+              <h2 className={`text-3xl`}>{currentProduct}</h2>
+              <p className="text-lg">Hiện tại</p>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={12} lg={6}>
+            <Card
+              className="border-l-4"
+              bodyStyle={{ padding: "20px", backgroundColor: "#fff4e6" }}
+            >
+              <h2 className={`text-3xl`}>{rawMaterial}</h2>
+              <p className="text-lg">Nguyên vật liệu</p>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={12} lg={6}>
+            <Card
+              className="border-l-4"
+              bodyStyle={{ padding: "20px", backgroundColor: "#ffe4e6" }}
+            >
+              <h2 className={`text-3xl`}>{finishedProduct}</h2>
+              <p className="text-lg">Thành phẩm</p>
+            </Card>
+          </Col>
+        </Row>
+      </div>
       <Row
         gutter={[16, 16]}
         style={{
@@ -179,12 +287,15 @@ const Home = () => {
           />
         </Col>
       </Row>
+
+      {/* <h1 style={{ fontSize: "30px" }}>{data}</h1> */}
+
       <Table
         className="bg-white shadow-lg rounded-lg overflow-hidden"
         columns={columns}
         dataSource={data}
         expandable={expandable}
-        rowClassName={() => "hover:bg-gray-100 p-4"}
+        rowClassName={rowClassName}
       />
     </div>
   );

@@ -25,9 +25,8 @@ import SockJS from "sockjs-client";
 import { useState, useEffect } from "react";
 
 function App() {
+  const [data, setData] = useState([]);
 
-  const [data, setData] = useState([])
-  
   return (
     <div className="App">
       <Switch>
