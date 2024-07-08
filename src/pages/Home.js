@@ -141,7 +141,7 @@ const Home = () => {
       });
 
     // Thiết lập kết nối WebSocket
-    const sock = new SockJS("172.20.10.3:8090/echo");
+    const sock = new SockJS("https://172.20.10.3:8090/echo");
     console.log("sock ", sock);
 
     sock.onopen = function () {
