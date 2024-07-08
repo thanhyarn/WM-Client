@@ -119,7 +119,7 @@ const Home = () => {
 
   useEffect(() => {
     // Gọi API để lấy dữ liệu khi component được mount
-    fetch("http://192.168.1.18/api/fetch-data")
+    fetch("http://192.168.1.18:3003/api/fetch-data")
       .then((response) => response.json())
       .then((data) => {
         // Thêm trường key vào mỗi object trong mảng
@@ -141,7 +141,7 @@ const Home = () => {
       });
 
     // Thiết lập kết nối WebSocket
-    const sock = new SockJS("192.168.1.18:8090/echo");
+    const sock = new SockJS("192.168.1.18:3003:8090/echo");
     console.log("sock ", sock);
 
     sock.onopen = function () {
