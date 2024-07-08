@@ -148,20 +148,15 @@ const clockicon = [
 const data = [
   {
     title: "New message from Sophie",
-    description: <>{clockicon} 2 days ago</>,
-
-    avatar: avtar,
+    background: "green",
   },
   {
     title: "New album by Travis Scott",
-    description: <>{clockicon} 2 days ago</>,
-
-    avatar: <Avatar shape="square">{wifi}</Avatar>,
+    background: "red",
   },
   {
     title: "Payment completed",
-    description: <>{clockicon} 2 days ago</>,
-    avatar: <Avatar shape="square">{credit}</Avatar>,
+    background: "green",
   },
 ];
 
@@ -173,11 +168,11 @@ const menu = (
     dataSource={data}
     renderItem={(item) => (
       <List.Item>
-        <List.Item.Meta
-          avatar={<Avatar shape="square" src={item.avatar} />}
+        {/* <List.Item.Meta
+          style={{ background: `${item.background}`, padding: "10px" }}
           title={item.title}
           description={item.description}
-        />
+        /> */}
       </List.Item>
     )}
   />

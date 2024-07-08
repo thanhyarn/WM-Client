@@ -23,6 +23,7 @@ import "./assets/styles/main.css";
 import "./assets/styles/responsive.css";
 import SockJS from "sockjs-client";
 import { useState, useEffect } from "react";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const [data, setData] = useState([]);
@@ -41,6 +42,9 @@ function App() {
           <Redirect from="*" to="/dashboard" />
         </Main>
       </Switch>
+      <div>
+        <Toaster />
+      </div>
     </div>
   );
 }

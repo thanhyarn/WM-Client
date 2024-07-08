@@ -15,6 +15,8 @@ import "./Home.css";
 
 import { SearchOutlined } from "@ant-design/icons";
 import SockJS from "sockjs-client";
+import { useHistory } from "react-router-dom";
+import toast from "react-hot-toast";
 const { Option } = Select;
 const { Search } = Input;
 
@@ -36,6 +38,7 @@ const Home = () => {
   const [currentProduct, setCurrentProduct] = useState(0);
   const [rawMaterial, setRawMaterial] = useState(0);
   const [finishedProduct, setFinishedProduct] = useState(0);
+  const history = useHistory();
 
   const aggregateData = (items) => {
     // Lọc items dựa trên selectedWarehouse
@@ -84,7 +87,9 @@ const Home = () => {
       acc[key].count += 1;
       acc[key].data.push({
         epc: item.epc,
-        timestamp: item.timestamp ? item.timestamp : "Chưa từng vào kho",
+        timestamp: item.timestamp
+          ? new Date(item.timestamp).toLocaleString()
+          : "Chưa từng vào kho",
       });
       return acc;
     }, {});
@@ -97,43 +102,53 @@ const Home = () => {
   };
 
   const handleViewHistory = (epc) => {
-    // setIsModalOpen(true);
-    // setLoading(true);
-    // fetch(`http://localhost:3003/api/get-record/${epc}`)
-    //   .then((response) => {
-    //     if (!response.ok) {
-    //       throw new Error("Network response was not ok");
-    //     }
-    //     return response.json();
-    //   })
-    //   .then((data) => {
-    //     setHistoryData(data);
-    //     setLoading(false);
-    //     console.log(data);
-    //   })
-    //   .catch((error) => {
-    //     console.error("Error fetching data:", error);
-    //     setLoading(false);
-    //   });
+    console.log();
+    localStorage.setItem("searchEpc", epc);
+    localStorage.setItem("warehouse", selectedWarehouse);
+
+    history.push("/tables");
+  };
+
+  const toastMessage = (epc, data, warehouse) => {
+    // Tìm sản phẩm trong mảng data dựa trên epc
+    const product = data.find((item) => item.epc === epc);
+
+    if (product) {
+      // Kiểm tra giá trị của warehouse và hiển thị thông báo tương ứng
+      if (warehouse === "0") {
+        toast(`Đã có sản phẩm ${product.information} rời khỏi kho`, {
+          icon: "🚪",
+          style: {
+            borderRadius: "10px",
+            background: "#333",
+            color: "#fff",
+          },
+          position: "top-right",
+        });
+      } else {
+        toast(`Đã có sản phẩm ${product.information} vào kho`, {
+          icon: "📦",
+          style: {
+            borderRadius: "10px",
+            background: "#333",
+            color: "#fff",
+          },
+          position: "top-right",
+        });
+      }
+    } else {
+      toast.error("Sản phẩm không tìm thấy trong dữ liệu");
+    }
   };
 
   useEffect(() => {
     // Gọi API để lấy dữ liệu khi component được mount
-    fetch("https://172.20.10.3:3003/api/fetch-data")
+    fetch("http://localhost:3003/api/fetch-data")
       .then((response) => response.json())
       .then((data) => {
-        // Thêm trường key vào mỗi object trong mảng
-        // let newData = data.arrayData.map((item, index) => ({
-        //   ...item,
-        //   key: index + 1, // Tạo key tự tăng
-        // }));
-
         console.log(data.arrayData);
-
         const newData = aggregateData(data.arrayData);
-
         setData(newData);
-
         console.log(newData);
       })
       .catch((error) => {
@@ -141,16 +156,18 @@ const Home = () => {
       });
 
     // Thiết lập kết nối WebSocket
-    const sock = new SockJS("https://172.20.10.3:8090/echo");
+    const sock = new SockJS("http://localhost:8090/echo");
     console.log("sock ", sock);
 
     sock.onopen = function () {
       console.log("WebSocket connection open");
     };
 
-    sock.onmessage = function (e) {
+    sock.onmessage = async function (e) {
       const newData = JSON.parse(e.data);
-      setData(aggregateData(newData));
+      console.log(newData.data);
+      toastMessage(newData.epc, newData.data, newData.warehouse);
+      await setData(aggregateData(newData.data));
     };
 
     sock.onclose = function () {
